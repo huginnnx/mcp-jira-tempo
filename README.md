@@ -136,6 +136,21 @@ This MCP server exposes **generic HTTP tools** for **Jira** and (optionally) **T
 
 **Work attributes:** List definitions with `tempo_get` and `path: "/work-attributes"` (then use the returned keys/types in worklog bodies per Tempo docs).
 
+### Tempo helper tools (opinionated, still generic)
+
+These tools wrap common flows so the model does not need raw paths. All remain **parameterized** (no project or contract is hardcoded).
+
+| Tool | Purpose |
+|------|---------|
+| `tempo_list_work_attributes` | List work attribute definitions (`GET /work-attributes`). |
+| `tempo_list_accounts` | Paginated list of Tempo accounts / contracts (`GET /accounts`). |
+| `tempo_search_accounts` | **POST /accounts/search** — filter by `statuses` (e.g. `OPEN`), `keys`, `ids`, `global`. |
+| `tempo_get_account` | One account by key (`GET /accounts/{key}`). |
+| `tempo_get_account_links` | Project/global links for an account (`GET /accounts/{key}/links`). |
+| `tempo_find_accounts_for_jira_project` | Finds contracts linked to a Jira project. Uses **POST /accounts/search** with `OPEN` / `CLOSED` when possible; falls back to **GET /accounts** if search fails. Optional `useAccountsSearch`, `customerKey`, `maxPages`, `requestDelayMs`. |
+
+Typical flow when logging time: `tempo_list_work_attributes` → `tempo_find_accounts_for_jira_project` (OPEN) → pick `accountKey` for `_Contrato_` → `tempo_post` `path: "/worklogs"` with `attributes`.
+
 ### Common API Paths
 
 **Projects:**
@@ -294,6 +309,12 @@ npx -y @aashari/mcp-server-atlassian-jira tempo get \
 npx -y @aashari/mcp-server-atlassian-jira tempo get \
   --path "/worklogs" \
   --query-params '{"limit":"10"}' \
+  --output-format json
+
+# Search accounts (POST /accounts/search) — e.g. only OPEN contracts
+npx -y @aashari/mcp-server-atlassian-jira tempo post \
+  --path "/accounts/search" \
+  --body '{"statuses":["OPEN"],"keys":["CLOUDBAY_DEVELOPMENT"]}' \
   --output-format json
 ```
 
