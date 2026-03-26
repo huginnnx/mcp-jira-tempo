@@ -3,6 +3,7 @@ import { Logger } from '../utils/logger.util.js';
 import { VERSION, CLI_NAME } from '../utils/constants.util.js';
 
 import atlassianApiCommands from './atlassian.api.cli.js';
+import tempoApiCommands from './tempo.api.cli.js';
 
 // Package description
 const DESCRIPTION =
@@ -24,6 +25,7 @@ export async function runCli(args: string[]) {
 
 	// Register CLI commands
 	atlassianApiCommands.register(program);
+	tempoApiCommands.register(program);
 	cliLogger.debug('API commands registered');
 
 	// Handle unknown commands
