@@ -89,6 +89,51 @@ class ConfigLoader {
 	}
 
 	/**
+	 * Merge `environments` from the first matching top-level key into process.env
+	 * (only when the variable is not already set).
+	 */
+	private applyGlobalEnvSection(
+		root: Record<string, unknown>,
+		potentialKeys: string[],
+		label: string,
+	): void {
+		const methodLogger = Logger.forContext(
+			'utils/config.util.ts',
+			'applyGlobalEnvSection',
+		);
+
+		for (const key of potentialKeys) {
+			const section = root[key];
+			if (
+				section &&
+				typeof section === 'object' &&
+				'environments' in section &&
+				(section as { environments?: Record<string, unknown> })
+					.environments &&
+				typeof (section as { environments: Record<string, unknown> })
+					.environments === 'object'
+			) {
+				const environments = (
+					section as { environments: Record<string, unknown> }
+				).environments;
+				for (const [envKey, value] of Object.entries(environments)) {
+					if (process.env[envKey] === undefined) {
+						process.env[envKey] = String(value);
+					}
+				}
+				methodLogger.debug(
+					`[src/utils/config.util.ts@applyGlobalEnvSection] Loaded ${label} global config using key: ${key}`,
+				);
+				return;
+			}
+		}
+
+		methodLogger.debug(
+			`[src/utils/config.util.ts@applyGlobalEnvSection] No ${label} configuration for keys: ${potentialKeys.join(', ')}`,
+		);
+	}
+
+	/**
 	 * Load configuration from global config file at $HOME/.mcp/configs.json
 	 */
 	private loadFromGlobalConfig(): void {
@@ -109,62 +154,24 @@ class ConfigLoader {
 			}
 
 			const configContent = fs.readFileSync(globalConfigPath, 'utf8');
-			const config = JSON.parse(configContent);
+			const root = JSON.parse(configContent) as Record<string, unknown>;
 
-			// Determine the potential keys for the current package
-			const shortKey = 'jira'; // Project-specific short key
-			const atlassianProductKey = 'atlassian-jira'; // New supported key
-			const fullPackageName = this.packageName; // e.g., '@aashari/mcp-server-atlassian-jira'
+			const shortKey = 'jira';
+			const atlassianProductKey = 'atlassian-jira';
+			const fullPackageName = this.packageName;
 			const unscopedPackageName =
-				fullPackageName.split('/')[1] || fullPackageName; // e.g., 'mcp-server-atlassian-jira'
+				fullPackageName.split('/')[1] || fullPackageName;
 
-			// Define the prioritized order of keys to check
-			const potentialKeys = [
+			const jiraKeys = [
 				shortKey,
 				atlassianProductKey,
 				fullPackageName,
 				unscopedPackageName,
 			];
-			let foundConfigSection: {
-				environments?: Record<string, unknown>;
-			} | null = null;
-			let usedKey: string | null = null;
+			this.applyGlobalEnvSection(root, jiraKeys, 'Jira');
 
-			for (const key of potentialKeys) {
-				if (
-					config[key] &&
-					typeof config[key] === 'object' &&
-					config[key].environments
-				) {
-					foundConfigSection = config[key];
-					usedKey = key;
-					methodLogger.debug(
-						`[src/utils/config.util.ts@loadFromGlobalConfig] Found configuration using key: ${key}`,
-					);
-					break; // Stop once found
-				}
-			}
-
-			if (!foundConfigSection || !foundConfigSection.environments) {
-				methodLogger.debug(
-					`[src/utils/config.util.ts@loadFromGlobalConfig] No configuration found for ${
-						this.packageName
-					} using keys: ${potentialKeys.join(', ')}`,
-				);
-				return;
-			}
-
-			const environments = foundConfigSection.environments;
-			for (const [key, value] of Object.entries(environments)) {
-				// Only set if not already defined in process.env
-				if (process.env[key] === undefined) {
-					process.env[key] = String(value);
-				}
-			}
-
-			methodLogger.debug(
-				`[src/utils/config.util.ts@loadFromGlobalConfig] Loaded configuration from global config file using key: ${usedKey}`,
-			);
+			const tempoKeys = ['tempo', 'tempo-cloud'];
+			this.applyGlobalEnvSection(root, tempoKeys, 'Tempo');
 		} catch (error) {
 			methodLogger.error(
 				'[src/utils/config.util.ts@loadFromGlobalConfig] Error loading global config file',

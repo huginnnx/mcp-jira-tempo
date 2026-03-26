@@ -67,7 +67,9 @@ Add this to your Claude configuration file (`~/.claude/claude_desktop_config.jso
       "env": {
         "ATLASSIAN_SITE_NAME": "your-company",
         "ATLASSIAN_USER_EMAIL": "your.email@company.com",
-        "ATLASSIAN_API_TOKEN": "your_api_token"
+        "ATLASSIAN_API_TOKEN": "your_api_token",
+        "TEMPO_API_TOKEN": "your_tempo_api_token",
+        "TEMPO_API_BASE_URL": "https://api.tempo.io/4"
       }
     }
   }
@@ -104,9 +106,13 @@ Create `~/.mcp/configs.json` for system-wide configuration:
 
 **Alternative config keys:** The system also accepts `"atlassian-jira"`, `"@aashari/mcp-server-atlassian-jira"`, or `"mcp-server-atlassian-jira"` instead of `"jira"`.
 
+For **Tempo**, you can add a sibling block using the key `"tempo"` or `"tempo-cloud"` with the same `environments` shape (e.g. `TEMPO_API_TOKEN`, optional `TEMPO_API_BASE_URL`).
+
 ## Available Tools
 
-This MCP server provides 5 generic tools that can access any Jira API endpoint:
+This MCP server exposes **generic HTTP tools** for **Jira** and (optionally) **Tempo Cloud**.
+
+### Jira (`ATLASSIAN_*` credentials)
 
 | Tool | Description |
 |------|-------------|
@@ -115,6 +121,35 @@ This MCP server provides 5 generic tools that can access any Jira API endpoint:
 | `jira_put` | PUT to any endpoint (replace resources) |
 | `jira_patch` | PATCH any endpoint (partial updates) |
 | `jira_delete` | DELETE any endpoint (remove resources) |
+
+### Tempo Cloud (`TEMPO_API_TOKEN`)
+
+| Tool | Description |
+|------|-------------|
+| `tempo_get` | GET any Tempo REST API path under your base URL (default `https://api.tempo.io/4`) |
+| `tempo_post` | POST (e.g. create worklogs, searches) |
+| `tempo_put` | PUT |
+| `tempo_patch` | PATCH |
+| `tempo_delete` | DELETE |
+
+**Tempo token:** Jira → Tempo → **Settings** → **Data Access** → **API Integration** → create a token with the scopes you need (Worklogs + Work Attributes for time attributes). See [Tempo REST API integrations](https://help.tempo.io/planner/latest/using-rest-api-integrations) and [API reference](https://apidocs.tempo.io/).
+
+**Work attributes:** List definitions with `tempo_get` and `path: "/work-attributes"` (then use the returned keys/types in worklog bodies per Tempo docs).
+
+### Tempo helper tools (opinionated, still generic)
+
+These tools wrap common flows so the model does not need raw paths. All remain **parameterized** (no project or contract is hardcoded).
+
+| Tool | Purpose |
+|------|---------|
+| `tempo_list_work_attributes` | List work attribute definitions (`GET /work-attributes`). |
+| `tempo_list_accounts` | Paginated list of Tempo accounts / contracts (`GET /accounts`). |
+| `tempo_search_accounts` | **POST /accounts/search** — filter by `statuses` (e.g. `OPEN`), `keys`, `ids`, `global`. |
+| `tempo_get_account` | One account by key (`GET /accounts/{key}`). |
+| `tempo_get_account_links` | Project/global links for an account (`GET /accounts/{key}/links`). |
+| `tempo_find_accounts_for_jira_project` | Finds contracts linked to a Jira project. Uses **POST /accounts/search** with `OPEN` / `CLOSED` when possible; falls back to **GET /accounts** if search fails. Optional `useAccountsSearch`, `customerKey`, `maxPages`, `requestDelayMs`. |
+
+Typical flow when logging time: `tempo_list_work_attributes` → `tempo_find_accounts_for_jira_project` (OPEN) → pick `accountKey` for `_Contrato_` → `tempo_post` `path: "/worklogs"` with `attributes`.
 
 ### Common API Paths
 
@@ -257,6 +292,30 @@ npx -y @aashari/mcp-server-atlassian-jira patch \
 # DELETE request
 npx -y @aashari/mcp-server-atlassian-jira delete \
   --path "/rest/api/3/issue/PROJ-123/comment/12345"
+```
+
+### Tempo CLI (`tempo` subcommand)
+
+Requires `TEMPO_API_TOKEN` (and optionally `TEMPO_API_BASE_URL`, default `https://api.tempo.io/4`).
+
+```bash
+# List work attribute definitions (discover keys and static options)
+export TEMPO_API_TOKEN="your_tempo_token"
+npx -y @aashari/mcp-server-atlassian-jira tempo get \
+  --path "/work-attributes" \
+  --output-format json
+
+# Example: worklogs (see https://apidocs.tempo.io/ for body shape, pagination, issueId)
+npx -y @aashari/mcp-server-atlassian-jira tempo get \
+  --path "/worklogs" \
+  --query-params '{"limit":"10"}' \
+  --output-format json
+
+# Search accounts (POST /accounts/search) — e.g. only OPEN contracts
+npx -y @aashari/mcp-server-atlassian-jira tempo post \
+  --path "/accounts/search" \
+  --body '{"statuses":["OPEN"],"keys":["CLOUDBAY_DEVELOPMENT"]}' \
+  --output-format json
 ```
 
 **Note:** All CLI commands support:
