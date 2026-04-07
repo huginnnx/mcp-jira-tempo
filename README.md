@@ -52,6 +52,8 @@ npx -y @aashari/mcp-server-atlassian-jira get --path "/rest/api/3/project/DEV"
 npx -y @aashari/mcp-server-atlassian-jira get --path "/rest/api/3/issue/PROJ-123" --jq "{key: key, summary: fields.summary, status: fields.status.name}"
 ```
 
+This legacy single-site setup remains supported. If you need one MCP server to access multiple Jira Cloud sites, use named Jira profiles as shown below.
+
 ## Connect to AI Assistants
 
 ### For Claude Desktop Users
@@ -65,9 +67,8 @@ Add this to your Claude configuration file (`~/.claude/claude_desktop_config.jso
       "command": "npx",
       "args": ["-y", "@aashari/mcp-server-atlassian-jira"],
       "env": {
-        "ATLASSIAN_SITE_NAME": "your-company",
-        "ATLASSIAN_USER_EMAIL": "your.email@company.com",
-        "ATLASSIAN_API_TOKEN": "your_api_token",
+        "ATLASSIAN_DEFAULT_PROFILE": "company",
+        "ATLASSIAN_PROFILES_JSON": "{\"company\":{\"siteName\":\"your-company\",\"userEmail\":\"your.email@company.com\",\"apiToken\":\"your_api_token\"},\"client-x\":{\"siteName\":\"client-x\",\"userEmail\":\"your.email@company.com\",\"apiToken\":\"your_api_token\"}}",
         "TEMPO_API_TOKEN": "your_tempo_api_token",
         "TEMPO_API_BASE_URL": "https://api.tempo.io/4"
       }
@@ -95,6 +96,30 @@ Create `~/.mcp/configs.json` for system-wide configuration:
 ```json
 {
   "jira": {
+    "defaultProfile": "company",
+    "profiles": {
+      "company": {
+        "siteName": "your-company",
+        "userEmail": "your.email@company.com",
+        "apiToken": "your_api_token"
+      },
+      "client-x": {
+        "siteName": "client-x",
+        "userEmail": "your.email@company.com",
+        "apiToken": "your_api_token"
+      }
+    }
+  }
+}
+```
+
+**Alternative config keys:** The system also accepts `"atlassian-jira"`, `"@aashari/mcp-server-atlassian-jira"`, or `"mcp-server-atlassian-jira"` instead of `"jira"`.
+
+For backward compatibility, you can still use the legacy single-site `environments` block:
+
+```json
+{
+  "jira": {
     "environments": {
       "ATLASSIAN_SITE_NAME": "your-company",
       "ATLASSIAN_USER_EMAIL": "your.email@company.com",
@@ -104,7 +129,22 @@ Create `~/.mcp/configs.json` for system-wide configuration:
 }
 ```
 
-**Alternative config keys:** The system also accepts `"atlassian-jira"`, `"@aashari/mcp-server-atlassian-jira"`, or `"mcp-server-atlassian-jira"` instead of `"jira"`.
+When profiles are configured, the server resolves Jira credentials in this order:
+1. Explicit `profile` passed to a Jira tool call
+2. Configured `defaultProfile`
+3. Legacy single-site `ATLASSIAN_*` credentials
+
+Example tool call targeting a non-default Jira site:
+
+```json
+{
+  "profile": "client-x",
+  "path": "/rest/api/3/project/search",
+  "queryParams": {
+    "maxResults": "10"
+  }
+}
+```
 
 For **Tempo**, you can add a sibling block using the key `"tempo"` or `"tempo-cloud"` with the same `environments` shape (e.g. `TEMPO_API_TOKEN`, optional `TEMPO_API_BASE_URL`).
 
@@ -121,6 +161,8 @@ This MCP server exposes **generic HTTP tools** for **Jira** and (optionally) **T
 | `jira_put` | PUT to any endpoint (replace resources) |
 | `jira_patch` | PATCH any endpoint (partial updates) |
 | `jira_delete` | DELETE any endpoint (remove resources) |
+
+Each Jira tool also accepts an optional `profile` field so one MCP server can target multiple configured Jira sites.
 
 ### Tempo Cloud (`TEMPO_API_TOKEN`)
 

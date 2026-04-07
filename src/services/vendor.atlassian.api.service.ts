@@ -40,6 +40,7 @@ export interface ApiRequestOptions {
 	method?: HttpMethod;
 	queryParams?: Record<string, string>;
 	body?: Record<string, unknown>;
+	profile?: string;
 }
 
 /**
@@ -47,13 +48,13 @@ export interface ApiRequestOptions {
  * @throws {McpError} If credentials are missing
  * @returns {AtlassianCredentials} Valid credentials
  */
-export function validateCredentials(): AtlassianCredentials {
+export function validateCredentials(profile?: string): AtlassianCredentials {
 	const methodLogger = Logger.forContext(
 		'services/vendor.atlassian.api.service.ts',
 		'validateCredentials',
 	);
 
-	const credentials = getAtlassianCredentials();
+	const credentials = getAtlassianCredentials(profile);
 	if (!credentials) {
 		methodLogger.error('Missing Atlassian credentials');
 		throw createAuthMissingError();
@@ -129,7 +130,7 @@ export async function request<T = unknown>(
 
 	try {
 		// Validate credentials
-		const credentials = validateCredentials();
+		const credentials = validateCredentials(options.profile);
 
 		// Normalize path and append query params
 		let normalizedPath = normalizePath(path);

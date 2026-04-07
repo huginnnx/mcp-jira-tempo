@@ -134,6 +134,64 @@ class ConfigLoader {
 	}
 
 	/**
+	 * Merge Jira profile configuration from the first matching top-level key into process.env
+	 * (only when the variable is not already set).
+	 */
+	private applyGlobalJiraProfilesSection(
+		root: Record<string, unknown>,
+		potentialKeys: string[],
+	): void {
+		const methodLogger = Logger.forContext(
+			'utils/config.util.ts',
+			'applyGlobalJiraProfilesSection',
+		);
+
+		for (const key of potentialKeys) {
+			const section = root[key];
+			if (!section || typeof section !== 'object') {
+				continue;
+			}
+
+			const jiraSection = section as {
+				profiles?: Record<string, unknown>;
+				defaultProfile?: unknown;
+			};
+
+			if (
+				jiraSection.profiles &&
+				typeof jiraSection.profiles === 'object' &&
+				process.env.ATLASSIAN_PROFILES_JSON === undefined
+			) {
+				process.env.ATLASSIAN_PROFILES_JSON = JSON.stringify(
+					jiraSection.profiles,
+				);
+			}
+
+			if (
+				typeof jiraSection.defaultProfile === 'string' &&
+				process.env.ATLASSIAN_DEFAULT_PROFILE === undefined
+			) {
+				process.env.ATLASSIAN_DEFAULT_PROFILE =
+					jiraSection.defaultProfile;
+			}
+
+			if (
+				jiraSection.profiles ||
+				typeof jiraSection.defaultProfile === 'string'
+			) {
+				methodLogger.debug(
+					`[src/utils/config.util.ts@applyGlobalJiraProfilesSection] Loaded Jira profile config using key: ${key}`,
+				);
+				return;
+			}
+		}
+
+		methodLogger.debug(
+			`[src/utils/config.util.ts@applyGlobalJiraProfilesSection] No Jira profile configuration for keys: ${potentialKeys.join(', ')}`,
+		);
+	}
+
+	/**
 	 * Load configuration from global config file at $HOME/.mcp/configs.json
 	 */
 	private loadFromGlobalConfig(): void {
@@ -169,6 +227,7 @@ class ConfigLoader {
 				unscopedPackageName,
 			];
 			this.applyGlobalEnvSection(root, jiraKeys, 'Jira');
+			this.applyGlobalJiraProfilesSection(root, jiraKeys);
 
 			const tempoKeys = ['tempo', 'tempo-cloud'];
 			this.applyGlobalEnvSection(root, tempoKeys, 'Tempo');

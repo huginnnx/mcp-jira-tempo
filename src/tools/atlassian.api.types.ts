@@ -18,6 +18,17 @@ export const OutputFormat = z
  */
 const BaseApiToolArgs = {
 	/**
+	 * Optional Jira profile name used to select the target site and credentials
+	 */
+	profile: z
+		.string()
+		.min(1, 'Profile name cannot be empty')
+		.optional()
+		.describe(
+			'Optional Jira profile name to use for this request. When omitted, the server uses the configured default profile or falls back to legacy ATLASSIAN_* credentials.',
+		),
+
+	/**
 	 * The API endpoint path (without base URL)
 	 * Examples:
 	 * - "/rest/api/3/project" - list projects

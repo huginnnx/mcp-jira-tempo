@@ -130,6 +130,7 @@ const JIRA_GET_DESCRIPTION = `Read any Jira data. Returns TOON format by default
 - ALWAYS use \`jq\` param to filter response fields. Unfiltered responses are very expensive!
 - Use \`maxResults\` query param to restrict result count (e.g., \`maxResults: "5"\`)
 - If unsure about available fields, first fetch ONE item with \`maxResults: "1"\` and NO jq filter to explore the schema, then use jq in subsequent calls
+- Use optional \`profile\` when you need to target a non-default Jira site configured on the server
 
 **Schema Discovery Pattern:**
 1. First call: \`path: "/rest/api/3/search/jql", queryParams: {"maxResults": "1", "jql": "project=PROJ"}\` (no jq) - explore available fields
@@ -161,6 +162,7 @@ const JIRA_POST_DESCRIPTION = `Create Jira resources. Returns TOON format by def
 **IMPORTANT - Cost Optimization:**
 - Use \`jq\` param to extract only needed fields from response (e.g., \`jq: "{key: key, id: id}"\`)
 - Unfiltered responses include all metadata and are expensive!
+- Use optional \`profile\` when the request should target a specific configured Jira profile
 
 **Output format:** TOON (default) or JSON (\`outputFormat: "json"\`)
 
@@ -186,6 +188,7 @@ API reference: https://developer.atlassian.com/cloud/jira/platform/rest/v3/`;
 const JIRA_PUT_DESCRIPTION = `Replace Jira resources (full update). Returns TOON format by default.
 
 **IMPORTANT - Cost Optimization:** Use \`jq\` param to extract only needed fields from response
+- Use optional \`profile\` when the request should target a specific configured Jira profile
 
 **Output format:** TOON (default) or JSON (\`outputFormat: "json"\`)
 
@@ -207,6 +210,7 @@ API reference: https://developer.atlassian.com/cloud/jira/platform/rest/v3/`;
 const JIRA_PATCH_DESCRIPTION = `Partially update Jira resources. Returns TOON format by default.
 
 **IMPORTANT - Cost Optimization:** Use \`jq\` param to filter response fields.
+- Use optional \`profile\` when the request should target a specific configured Jira profile
 
 **Output format:** TOON (default) or JSON (\`outputFormat: "json"\`)
 
@@ -226,6 +230,8 @@ Note: PATCH only updates the fields you specify, leaving others unchanged.
 API reference: https://developer.atlassian.com/cloud/jira/platform/rest/v3/`;
 
 const JIRA_DELETE_DESCRIPTION = `Delete Jira resources. Returns TOON format by default.
+
+- Use optional \`profile\` when the request should target a specific configured Jira profile
 
 **Output format:** TOON (default) or JSON (\`outputFormat: "json"\`)
 

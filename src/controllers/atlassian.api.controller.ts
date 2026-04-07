@@ -33,6 +33,7 @@ type OutputFormat = 'toon' | 'json';
  */
 interface BaseRequestOptions {
 	path: string;
+	profile?: string;
 	queryParams?: Record<string, string>;
 	jq?: string;
 	outputFormat?: OutputFormat;
@@ -69,6 +70,7 @@ async function handleRequest(
 			options.path,
 			{
 				method,
+				profile: options.profile,
 				queryParams: options.queryParams,
 				body: options.body,
 			},
