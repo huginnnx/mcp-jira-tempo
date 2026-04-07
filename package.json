@@ -1,5 +1,5 @@
 {
-  "name": "mcp-jira-tempo",
+  "name": "@huginnnx/mcp-jira-tempo",
   "version": "1.0.0",
   "description": "MCP server for Jira Cloud (multi-profile) and Tempo Cloud: generic REST tools, file-based Jira profiles, and optional Tempo helpers for worklogs and accounts.",
   "main": "dist/index.js",
