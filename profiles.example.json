@@ -1,0 +1,15 @@
+{
+    "defaultProfile": "company",
+    "profiles": {
+      "company": {
+        "siteName": "your-company",
+        "userEmail": "your.email@company.com",
+        "apiToken": "your_atlassian_api_token"
+      },
+      "client-x": {
+        "siteName": "client-x",
+        "userEmail": "your.email@company.com",
+        "apiToken": "your_other_atlassian_api_token"
+      }
+    }
+  }

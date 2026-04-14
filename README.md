@@ -49,7 +49,7 @@ Generate a Jira API Token:
 
 ### 2. Create A Shared Profiles File
 
-Copy the committed template [`examples/jira-profiles.example.json`](examples/jira-profiles.example.json) to a path you control (for example `~/jira-profiles.json` or a gitignored `profiles.json` in this clone), replace the placeholders with real tokens, then point `ATLASSIAN_PROFILES_FILE` at that file using an **absolute** path.
+Copy the committed template [`profiles.example.json`](profiles.example.json), paste it into a file you control (for example `~/jira-profiles.json` or a gitignored `profiles.json`), replace the placeholders with real tokens, then point `ATLASSIAN_PROFILES_FILE` at that file using an **absolute** path.
 
 Minimal shape:
 
@@ -85,7 +85,7 @@ For commands run from a shell in this repo (for example `npm run cli`), copy `.e
 
 ### For Cursor
 
-Add a server entry like this to your Cursor `mcp.json`:
+Add a server entry like this to your Cursor `mcp.json` (npm package install, no local clone required):
 
 ```json
 {
@@ -106,6 +106,21 @@ Add a server entry like this to your Cursor `mcp.json`:
 ```
 
 If you only need Jira, omit the Tempo variables.
+
+You can also use the scoped package variant:
+
+```json
+{
+  "mcpServers": {
+    "atlassian-jira": {
+      "command": "npx",
+      "args": ["@huginnnx/mcp-jira-tempo"]
+    }
+  }
+}
+```
+
+Alternative (local clone): you can run the server from this repository (`node dist/index.js` / `npm run cli`), but that approach requires cloning the repo first.
 
 ### For Claude Desktop
 
